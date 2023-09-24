@@ -1,21 +1,21 @@
 create database part4;
 
-create table peer_info
+create table if not exists peer_info
 (
 );
-create table peer_projects
+create table if not exists peer_projects
 (
 );
-create table school_info
+create table if not exists school_info
 (
 );
-create table super_table
+create table if not exists super_table
 (
 );
-create table TableName23
+create table if not exists TableName23
 (
 );
-create table TableNameSuper
+create table if not exists TableNameSuper
 (
 );
 
@@ -56,20 +56,29 @@ SELECT MAX(param)
 FROM params;
 $$ language sql;
 
+
 -- 2) Создать хранимую процедуру с выходным параметром, которая выводит список имен
 -- и параметров всех скалярных SQL функций пользователя в текущей базе данных.
 -- Имена функций без параметров не выводить. Имена и список параметров должны выводиться
 -- в одну строку. Выходной параметр возвращает количество найденных функций.
-CREATE OR REPLACE PROCEDURE fnc_get_funcs_with_params() AS
+CREATE OR REPLACE PROCEDURE fnc_get_funcs_with_params(OUT func_count integer) AS
 $$
--- DECLARE
---     functions tsquery[];
+DECLARE
+    func varchar;
 BEGIN
-    SELECT fnc_get_function_params('' || routs.specific_name)
-    FROM information_schema.routines routs
-    WHERE routs.specific_schema = 'public';
---     func_count = COUNT(functions);
+    FOR func in (SELECT fnc_get_function_params('' || specific_name)
+                 FROM information_schema.routines
+                 WHERE specific_schema = 'public')
+        LOOP
+            IF func IS NOT NULL THEN
+                RAISE NOTICE '%', func;
+            END IF;
+        END LOOP;
+
+    func_count = (SELECT COUNT(*)
+                  FROM information_schema.routines
+                  WHERE specific_schema = 'public');
 END;
 $$ language plpgsql;
 
-CALL fnc_get_funcs_with_params();
+CALL fnc_get_funcs_with_params(0);
