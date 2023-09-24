@@ -66,6 +66,7 @@ $$
 DECLARE
     func varchar;
 BEGIN
+    func_count := 0;
     FOR func in (SELECT fnc_get_function_params('' || specific_name)
                  FROM information_schema.routines
                  WHERE specific_schema = 'public')
@@ -73,12 +74,47 @@ BEGIN
             IF func IS NOT NULL THEN
                 RAISE NOTICE '%', func;
             END IF;
+            func_count = func_count + 1;
         END LOOP;
-
-    func_count = (SELECT COUNT(*)
-                  FROM information_schema.routines
-                  WHERE specific_schema = 'public');
 END;
 $$ language plpgsql;
 
 CALL fnc_get_funcs_with_params(0);
+
+
+CREATE OR REPLACE FUNCTION fnc_trigger_function() RETURNS TRIGGER AS
+$$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_some_trigger
+    AFTER INSERT OR UPDATE
+    ON school_info
+    FOR EACH ROW
+EXECUTE PROCEDURE fnc_trigger_function();
+
+-- 3) Создать хранимую процедуру с выходным параметром, которая уничтожает все SQL DML триггеры
+-- в текущей базе данных. Выходной параметр возвращает количество уничтоженных триггеров.
+CREATE OR REPLACE PROCEDURE fnc_drop_all_triggers(OUT dropped_triggers integer) AS
+$$
+DECLARE
+    trigger record;
+BEGIN
+    dropped_triggers := 0;
+
+    FOR trigger in (SELECT DISTINCT trigger_name, event_object_table
+                    FROM information_schema.triggers
+                    WHERE trigger_schema = 'public')
+        LOOP
+            EXECUTE 'DROP TRIGGER ' || quote_ident(trigger.trigger_name) || ' ON ' ||
+                    quote_ident(trigger.event_object_table) || ';';
+            dropped_triggers = dropped_triggers + 1;
+        END LOOP;
+END;
+$$ language plpgsql;
+
+CALL fnc_drop_all_triggers(0);
