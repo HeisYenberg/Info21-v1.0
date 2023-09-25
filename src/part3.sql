@@ -1,11 +1,17 @@
 -- 1) Написать функцию, возвращающую таблицу TransferredPoints в более человекочитаемом виде
 -- Ник пира 1, ник пира 2, количество переданных пир поинтов.
 -- Количество отрицательное, если пир 2 получил от пира 1 больше поинтов.
-CREATE OR REPLACE FUNCTION fnc_get_transferred_points() AS
-$$
-SELECT * -- доделать
-FROM transferredpoints tp
---     JOIN peers p ON
+CREATE OR REPLACE FUNCTION fnc_get_transferred_points()
+    RETURNS TABLE
+            (
+                Peer1        varchar,
+                Peer2        varchar,
+                PointsAmount integer
+            )
+AS
+$$ -- доделать
+SELECT checkingpeer, checkedpeer, pointsamount
+FROM transferredpoints;
 $$ language sql;
 
 -- 2) Написать функцию, которая возвращает таблицу вида: ник пользователя, название проверенного задания, кол-во полученного XP
@@ -61,7 +67,7 @@ FROM fnc_get_peers_day_online('2023-09-25');
 -- 4) Посчитать изменение в количестве пир поинтов каждого пира по таблице TransferredPoints
 -- Результат вывести отсортированным по изменению числа поинтов.
 -- Формат вывода: ник пира, изменение в количество пир поинтов
-CREATE OR REPLACE FUNCTION fnc_peer_points_change(day date)
+CREATE OR REPLACE FUNCTION fnc_peer_points_change()
     RETURNS TABLE
             (
                 peer          varchar,
@@ -69,16 +75,21 @@ CREATE OR REPLACE FUNCTION fnc_peer_points_change(day date)
             )
 AS
 $$
-SELECT checkingpeer, SUM(pointsamount)
-FROM transferredpoints
-GROUP BY checkingpeer;
+SELECT checkingpeer, SUM(pointsamount) AS points
+FROM (SELECT checkingpeer, checkedpeer, pointsamount
+      FROM transferredpoints
+      UNION ALL
+      SELECT checkedpeer as checkingpeer, checkingpeer as checkedpeer, -pointsamount
+      FROM transferredpoints) as checks_div
+GROUP BY checkingpeer
+ORDER BY points DESC;
 $$ language sql;
 
 SELECT *
-FROM fnc_get_peers_day_online('2023-09-25');
+FROM fnc_peer_points_change();
 
 
--- 5) Определить самое часто проверяемое задание за каждый день
+-- 6) Определить самое часто проверяемое задание за каждый день
 -- При одинаковом количестве проверок каких-то заданий в определенный день, вывести их все.
 -- Формат вывода: день, название задания
 CREATE OR REPLACE FUNCTION fnc_most_freq_checked_task()
@@ -104,7 +115,7 @@ SELECT *
 FROM fnc_most_freq_checked_task();
 
 
--- 9) Найти всех пиров, выполнивших весь заданный блок задач и дату завершения последнего задания
+-- 7) Найти всех пиров, выполнивших весь заданный блок задач и дату завершения последнего задания
 -- Параметры процедуры: название блока, например "CPP".
 -- Результат вывести отсортированным по дате завершения.
 -- Формат вывода: ник пира, дата завершения блока (т.е. последнего выполненного задания из этого блока)
