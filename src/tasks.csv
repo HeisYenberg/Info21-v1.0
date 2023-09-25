@@ -1,15 +1,8 @@
 Title, ParentTask, MaxXP
-SQL_beginner.Day00,,125
-SQL_beginner.Day01,SQL_beginner.Day00,125
-SQL_beginner.Day02,SQL_beginner.Day01,125
-SQL_beginner.Day03,SQL_beginner.Day02,125
-SQL_beginner.Day04,SQL_beginner.Day03,125
-SQL_beginner.Team_00,SQL_beginner.Day04,125
-SQL_beginner.Day05,SQL_beginner.Team_00,125
-SQL_beginner.Day06,SQL_beginner.Day05,125
-SQL_beginner.Day07,SQL_beginner.Day06,125
-SQL_beginner.Day08,SQL_beginner.Day07,125
-SQL_beginner.Day09,SQL_beginner.Day08,125
-SQL_beginner.Team_01,SQL_beginner.Day09,125
-SQL2_Info21_v1.0,SQL_beginner.Team_01,600
-SQL3_RetailAnalitycs_v1.0,SQL2_Info21_v1.0,600
+C2_SimpleBashUtils,,350
+C3_s21_stringplus,C2_SimpleBashUtils,750
+C4_s21_math,C2_SimpleBashUtils,300
+C5_s21_decimal,C3_s21_stringplus,350
+C6_s21_matrix,C5_s21_decimal,200
+C7_SmartCalc_v1.0,C6_s21_matrix,650
+C8_3DViewer_v1.0,C7_SmartCalc_v1.0,1043
