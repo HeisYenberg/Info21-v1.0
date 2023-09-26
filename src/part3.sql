@@ -9,9 +9,13 @@ CREATE OR REPLACE FUNCTION fnc_get_transferred_points()
                 PointsAmount integer
             )
 AS
-$$ -- доделать
-SELECT checkingpeer, checkedpeer, pointsamount
-FROM transferredpoints;
+$$
+SELECT CASE WHEN checkingpeer < checkedpeer THEN checkingpeer ELSE checkedpeer END        as Peer1,
+       CASE WHEN checkingpeer > checkedpeer THEN checkingpeer ELSE checkedpeer END        as Peer2,
+       SUM(CASE WHEN checkingpeer < checkedpeer THEN pointsamount ELSE -pointsamount END) as PointsAmount
+FROM transferredpoints
+GROUP BY Peer1, Peer2
+ORDER BY Peer1, Peer2;
 $$ language sql;
 
 -- 2) Написать функцию, которая возвращает таблицу вида: ник пользователя, название проверенного задания, кол-во полученного XP
@@ -26,7 +30,7 @@ CREATE OR REPLACE FUNCTION fnc_get_checked_tasks()
             )
 AS
 $$
-SELECT c.peer, c.task /*SPLIT_PART(c.task, '_', 1) AS task*/, xp.xpamount
+SELECT c.peer, c.task, xp.xpamount
 FROM checks c
          JOIN xp ON c.id = xp."Check"
          JOIN p2p ON p2p."Check" = c.id
@@ -61,6 +65,12 @@ FROM (SELECT nickname, COUNT(*) AS count
 $$ language sql;
 
 SELECT *
+FROM fnc_get_peers_day_online('2023-09-14');
+
+SELECT *
+FROM fnc_get_peers_day_online('2023-09-11');
+
+SELECT *
 FROM fnc_get_peers_day_online('2023-09-25');
 
 
@@ -75,14 +85,37 @@ CREATE OR REPLACE FUNCTION fnc_peer_points_change()
             )
 AS
 $$
-SELECT checkingpeer, SUM(pointsamount) AS points
-FROM (SELECT checkingpeer, checkedpeer, pointsamount
+SELECT Peer1, SUM(pointsamount) AS points
+FROM (SELECT checkingpeer as Peer1, checkedpeer as Peer2, pointsamount
       FROM transferredpoints
       UNION ALL
-      SELECT checkedpeer as checkingpeer, checkingpeer as checkedpeer, -pointsamount
+      SELECT checkedpeer as Peer1, checkingpeer as Peer2, -pointsamount
       FROM transferredpoints) as checks_div
-GROUP BY checkingpeer
-ORDER BY points DESC;
+GROUP BY Peer1;
+$$ language sql;
+
+SELECT *
+FROM fnc_peer_points_change();
+
+
+-- 5) Посчитать изменение в количестве пир поинтов каждого пира по таблице, возвращаемой первой функцией из Part 3
+-- Результат вывести отсортированным по изменению числа поинтов.
+-- Формат вывода: ник пира, изменение в количество пир поинтов
+CREATE OR REPLACE FUNCTION fnc_peer_points_change_by_task1()
+    RETURNS TABLE
+            (
+                peer          varchar,
+                points_change integer
+            )
+AS
+$$
+SELECT Peer1, SUM(pointsamount) AS points
+FROM (SELECT Peer1, Peer2, pointsamount
+      FROM fnc_get_transferred_points()
+      UNION ALL
+      SELECT Peer2 as Peer1, Peer1 as Peer2, -pointsamount
+      FROM fnc_get_transferred_points()) as checks_div
+GROUP BY Peer1;
 $$ language sql;
 
 SELECT *
@@ -127,12 +160,12 @@ CREATE OR REPLACE FUNCTION fnc_get_peers_done_block(block varchar)
             )
 AS
 $$
-SELECT *
+SELECT peer, "Date"
 FROM checks
          JOIN p2p ON p2p."Check" = checks.id
-WHERE p2p.state = 'Success'; -- доделать
--- LEFT JOIN verter ON verter."Check" = checks.id
+WHERE p2p.state = 'Success'
+  AND task = (SELECT MAX(title) FROM tasks WHERE title ILIKE block || '%');
 $$ language sql;
 
 SELECT *
-FROM fnc_get_peers_done_block('SQL_beginner');
+FROM fnc_get_peers_done_block('CPP');
