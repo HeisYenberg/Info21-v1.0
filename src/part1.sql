@@ -15,7 +15,7 @@ CREATE OR REPLACE FUNCTION fnc_handle_parent_task()
     RETURNS TRIGGER AS
 $$
 BEGIN
-    IF NEW.ParentTask IS NULL AND (SELECT COUNT(*) FROM Tasks WHERE Title <> NEW.Title AND ParentTask IS NULL) > 0 THEN
+    IF NEW.ParentTask IS NULL AND (SELECT COUNT(*) FROM Tasks) > 0 THEN
         RAISE EXCEPTION 'Where can be only one starting task!';
     ELSIF NEW.ParentTask IS NOT NULL AND (SELECT COUNT(*)
                                           FROM Tasks
@@ -27,7 +27,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_tasks_update
-    AFTER UPDATE OR INSERT
+    BEFORE UPDATE OR INSERT
     ON Tasks
     FOR EACH ROW
 EXECUTE FUNCTION fnc_handle_parent_task();
@@ -71,7 +71,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_p2p_update
-    AFTER UPDATE OR INSERT
+    BEFORE UPDATE OR INSERT
     ON P2P
     FOR EACH ROW
 EXECUTE FUNCTION fnc_p2p_check_state();
@@ -118,23 +118,25 @@ CREATE TABLE XP
     XPAmount INTEGER               NOT NULL
 );
 
-CREATE OR REPLACE FUNCTION fnc_checks_check_state()
+CREATE OR REPLACE FUNCTION fnc_check_xp()
     RETURNS TRIGGER AS
 $$
 BEGIN
-    IF (SELECT COUNT(*) FROM P2P WHERE "Check" = NEW."Check" AND State = 'Success') = 0 AND
-       (SELECT COUNT(*) FROM Verter WHERE "Check" = NEW."Check" AND State = 'Success') = 0 THEN
-        RAISE EXCEPTION 'Successful peer checking has not been completed!';
+    IF NEW.XPAmount > (SELECT MaxXP
+                       FROM Checks
+                                INNER JOIN Tasks ON Checks.Task = Tasks.Title
+                       WHERE Checks.ID = NEW."Check") THEN
+        RAISE EXCEPTION 'XP amount is exceeding the maximum!';
     END IF;
     RETURN NEW;
-END;
+END ;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_checks_update
-    AFTER UPDATE OR INSERT
-    ON Verter
+CREATE TRIGGER trg_xp_update
+    BEFORE INSERT OR UPDATE
+    ON XP
     FOR EACH ROW
-EXECUTE FUNCTION fnc_checks_check_state();
+EXECUTE FUNCTION fnc_check_xp();
 
 CREATE TABLE TransferredPoints
 (
@@ -144,26 +146,6 @@ CREATE TABLE TransferredPoints
     PointsAmount INTEGER               NOT NULL,
     CONSTRAINT ch_unique_peers CHECK (CheckingPeer <> CheckedPeer)
 );
-
-CREATE OR REPLACE FUNCTION fnc_set_points_amount()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    UPDATE TransferredPoints
-    SET PointsAmount = (SELECT COUNT(*)
-                        FROM TransferredPoints
-                        WHERE CheckingPeer = NEW.CheckingPeer
-                          AND CheckedPeer = NEW.CheckedPeer)
-    WHERE ID = NEW.ID;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_checks_update
-    AFTER INSERT
-    ON TransferredPoints
-    FOR EACH ROW
-EXECUTE FUNCTION fnc_set_points_amount();
 
 CREATE TABLE Friends
 (
@@ -191,6 +173,41 @@ CREATE TABLE TimeTracking
     CONSTRAINT ch_range_state CHECK (State IN (1, 2))
 );
 
+CREATE OR REPLACE FUNCTION fnc_time_tracking_update()
+    RETURNS TRIGGER AS
+$$
+DECLARE
+    prev_date          DATE;
+    DECLARE prev_time  TIME;
+    DECLARE prev_state INTEGER;
+BEGIN
+    WITH last_peer_state AS (SELECT "Date", "Time", State
+                             FROM TimeTracking
+                             WHERE Peer = NEW.Peer
+                             ORDER BY "Date", "Time"
+                             LIMIT 1)
+    SELECT "Date",
+           "Time",
+           State
+    INTO prev_date, prev_time, prev_state
+    FROM last_peer_state;
+    IF prev_date IS NULL AND NEW.State = 2 THEN
+        RAISE EXCEPTION 'First state cannot be exit!';
+    ELSIF prev_state = NEW.State THEN
+        RAISE EXCEPTION 'Peer cannot be in the same state twice in a row!';
+    ELSIF (NEW."Date" < prev_date) OR (NEW."Date" = prev_date AND NEW."Time" < prev_time) THEN
+        RAISE EXCEPTION 'New state cannot be earlier than the previous!';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_check_time_tracking
+    BEFORE INSERT
+    ON TimeTracking
+    FOR EACH ROW
+EXECUTE FUNCTION fnc_time_tracking_update();
+
 CREATE OR REPLACE PROCEDURE import_from_csv(ptable_name VARCHAR, ppath_to_file VARCHAR)
 AS
 $$
@@ -207,32 +224,27 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-TRUNCATE P2P;
+CALL import_from_csv('Peers', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/peers.csv');
 
-INSERT INTO P2P(ID, "Check", CheckingPeer, State, "Time")
-VALUES (15, 7, 'scabberr', 'Success', '14:19:57');
+CALL import_from_csv('Tasks', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/tasks.csv');
 
-INSERT INTO Checks(Peer, Task, "Date")
-VALUES ('strangem', 'C2_SimpleBashUtils', NOW());
+CALL import_from_csv('Checks', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/checks.csv');
 
-CALL import_from_csv('Peers', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/peers.csv');
+CALL import_from_csv('P2P', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/p2p.csv');
 
-CALL import_from_csv('Tasks', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/tasks.csv');
+CALL import_from_csv('Verter', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/verter.csv');
 
-CALL import_from_csv('Checks', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/checks.csv');
+CALL import_from_csv('XP', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/xp.csv');
 
-CALL import_from_csv('P2P', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/p2p.csv');
-
-CALL import_from_csv('Verter', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/verter.csv');
-
-CALL import_from_csv('XP', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/xp.csv');
-
-CALL import_from_csv('Friends', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/friends.csv');
+CALL import_from_csv('Friends', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/friends.csv');
 
 CALL import_from_csv('Recommendations',
-                     '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/recommendations.csv');
+                     '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/recommendations.csv');
 
 CALL import_from_csv('TransferredPoints',
-                     '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/transferredpoints.csv');
+                     '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/transferredpoints.csv');
 
-CALL export_to_csv('P2P', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/p2p.csv');
+CALL import_from_csv('TimeTracking',
+                     '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/timetracking.csv');
+
+CALL export_to_csv('P2P', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/p2p.csv');
