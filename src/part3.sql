@@ -77,95 +77,93 @@ FROM fnc_get_peers_day_online('2023-09-25');
 -- 4) Посчитать изменение в количестве пир поинтов каждого пира по таблице TransferredPoints
 -- Результат вывести отсортированным по изменению числа поинтов.
 -- Формат вывода: ник пира, изменение в количество пир поинтов
-CREATE OR REPLACE FUNCTION fnc_peer_points_change()
-    RETURNS TABLE
-            (
-                peer          varchar,
-                points_change integer
-            )
+CREATE OR REPLACE PROCEDURE fnc_peer_points_change(IN curs refcursor)
 AS
 $$
-SELECT Peer1, SUM(pointsamount) AS points
-FROM (SELECT checkingpeer as Peer1, checkedpeer as Peer2, pointsamount
-      FROM transferredpoints
-      UNION ALL
-      SELECT checkedpeer as Peer1, checkingpeer as Peer2, -pointsamount
-      FROM transferredpoints) as checks_div
-GROUP BY Peer1;
-$$ language sql;
+BEGIN
+    OPEN curs FOR
+        SELECT Peer1, SUM(pointsamount) AS points
+        FROM (SELECT checkingpeer as Peer1, checkedpeer as Peer2, pointsamount
+              FROM transferredpoints
+              UNION ALL
+              SELECT checkedpeer as Peer1, checkingpeer as Peer2, -pointsamount
+              FROM transferredpoints) as checks_div
+        GROUP BY Peer1;
+END;
+$$ language plpgsql;
 
-SELECT *
-FROM fnc_peer_points_change();
+BEGIN;
+CALL fnc_peer_points_change('curs');
+FETCH ALL IN "curs";
+END;
 
 
 -- 5) Посчитать изменение в количестве пир поинтов каждого пира по таблице, возвращаемой первой функцией из Part 3
 -- Результат вывести отсортированным по изменению числа поинтов.
 -- Формат вывода: ник пира, изменение в количество пир поинтов
-CREATE OR REPLACE FUNCTION fnc_peer_points_change_by_task1()
-    RETURNS TABLE
-            (
-                peer          varchar,
-                points_change integer
-            )
+CREATE OR REPLACE PROCEDURE fnc_peer_points_change_by_task1(IN curs refcursor)
 AS
 $$
-SELECT Peer1, SUM(pointsamount) AS points
-FROM (SELECT Peer1, Peer2, pointsamount
-      FROM fnc_get_transferred_points()
-      UNION ALL
-      SELECT Peer2 as Peer1, Peer1 as Peer2, -pointsamount
-      FROM fnc_get_transferred_points()) as checks_div
-GROUP BY Peer1;
-$$ language sql;
+BEGIN
+    OPEN curs FOR
+        SELECT Peer1, SUM(pointsamount) AS points
+        FROM (SELECT Peer1, Peer2, pointsamount
+              FROM fnc_get_transferred_points()
+              UNION ALL
+              SELECT Peer2 as Peer1, Peer1 as Peer2, -pointsamount
+              FROM fnc_get_transferred_points()) as checks_div
+        GROUP BY Peer1;
+END;
+$$ language plpgsql;
 
-SELECT *
-FROM fnc_peer_points_change();
+BEGIN;
+CALL fnc_peer_points_change('curs');
+FETCH ALL IN "curs";
+END;
 
 
 -- 6) Определить самое часто проверяемое задание за каждый день
 -- При одинаковом количестве проверок каких-то заданий в определенный день, вывести их все.
 -- Формат вывода: день, название задания
-CREATE OR REPLACE FUNCTION fnc_most_freq_checked_task()
-    RETURNS TABLE
-            (
-                Day  date,
-                Task varchar
-            )
+CREATE OR REPLACE PROCEDURE fnc_most_freq_checked_task(IN curs refcursor)
 AS
 $$
-WITH TaskCounts AS (SELECT "Date",
-                           task,
-                           RANK() OVER (PARTITION BY "Date" ORDER BY COUNT(*) DESC) AS rank
-                    FROM checks
-                    GROUP BY "Date", task)
-SELECT "Date", task
-FROM TaskCounts
-WHERE rank = 1
-ORDER BY "Date";
-$$ language sql;
+BEGIN
+    OPEN curs FOR
+        SELECT "Date", task
+        FROM (SELECT "Date", task, RANK() OVER (PARTITION BY "Date" ORDER BY COUNT(*) DESC) AS rank
+              FROM checks
+              GROUP BY "Date", task) as ranked_tasks
+        WHERE rank = 1
+        ORDER BY "Date";
+END;
+$$ language plpgsql;
 
-SELECT *
-FROM fnc_most_freq_checked_task();
+
+BEGIN;
+CALL fnc_most_freq_checked_task('curs');
+FETCH ALL IN "curs";
+END;
 
 
 -- 7) Найти всех пиров, выполнивших весь заданный блок задач и дату завершения последнего задания
 -- Параметры процедуры: название блока, например "CPP".
 -- Результат вывести отсортированным по дате завершения.
 -- Формат вывода: ник пира, дата завершения блока (т.е. последнего выполненного задания из этого блока)
-CREATE OR REPLACE FUNCTION fnc_get_peers_done_block(block varchar)
-    RETURNS TABLE
-            (
-                Peer varchar,
-                Day  date
-            )
+CREATE OR REPLACE PROCEDURE fnc_get_peers_done_block(IN curs refcursor, block varchar)
 AS
 $$
-SELECT peer, "Date"
-FROM checks
-         JOIN p2p ON p2p."Check" = checks.id
-WHERE p2p.state = 'Success'
-  AND task = (SELECT MAX(title) FROM tasks WHERE title ILIKE block || '%');
-$$ language sql;
+BEGIN
+    OPEN curs FOR
+        SELECT peer, "Date"
+        FROM checks
+                 JOIN p2p ON p2p."Check" = checks.id
+        WHERE p2p.state = 'Success'
+          AND task = (SELECT MAX(title) FROM tasks WHERE title ILIKE block || '%');
+END;
+$$ language plpgsql;
 
-SELECT *
-FROM fnc_get_peers_done_block('CPP');
+BEGIN;
+CALL fnc_get_peers_done_block('curs', 'CPP');
+FETCH ALL IN "curs";
+END;
