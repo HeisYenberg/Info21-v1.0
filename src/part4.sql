@@ -1,18 +1,22 @@
-create database part4;
+CREATE DATABASE part4;
 
-create table if not exists peer_projects
+CREATE TABLE IF NOT EXISTS peer_projects
 (
 );
-create table if not exists school_info
+
+CREATE TABLE IF NOT EXISTS school_info
 (
 );
-create table if not exists TableNameNew
+
+CREATE TABLE IF NOT EXISTS TableNameNew
 (
 );
-create table if not exists TableName23
+
+CREATE TABLE IF NOT EXISTS TableName23
 (
 );
-create table if not exists TableNameSuper
+
+CREATE TABLE IF NOT EXISTS TableNameSuper
 (
 );
 
