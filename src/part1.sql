@@ -118,26 +118,6 @@ CREATE TABLE XP
     XPAmount INTEGER               NOT NULL
 );
 
-CREATE OR REPLACE FUNCTION fnc_check_xp()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    IF NEW.XPAmount > (SELECT MaxXP
-                       FROM Checks
-                                INNER JOIN Tasks ON Checks.Task = Tasks.Title
-                       WHERE Checks.ID = NEW."Check") THEN
-        RAISE EXCEPTION 'XP amount is exceeding the maximum!';
-    END IF;
-    RETURN NEW;
-END ;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_xp_update
-    BEFORE INSERT OR UPDATE
-    ON XP
-    FOR EACH ROW
-EXECUTE FUNCTION fnc_check_xp();
-
 CREATE TABLE TransferredPoints
 (
     ID           BIGSERIAL PRIMARY KEY NOT NULL,
