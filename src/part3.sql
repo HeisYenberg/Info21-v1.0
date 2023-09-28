@@ -1,6 +1,7 @@
 -- 1) Написать функцию, возвращающую таблицу TransferredPoints в более человекочитаемом виде
 -- Ник пира 1, ник пира 2, количество переданных пир поинтов.
 -- Количество отрицательное, если пир 2 получил от пира 1 больше поинтов.
+
 CREATE OR REPLACE FUNCTION fnc_get_transferred_points()
     RETURNS TABLE
             (
@@ -24,6 +25,7 @@ FROM fnc_get_transferred_points();
 -- 2) Написать функцию, которая возвращает таблицу вида: ник пользователя, название проверенного задания, кол-во полученного XP
 -- В таблицу включать только задания, успешно прошедшие проверку (определять по таблице Checks).
 -- Одна задача может быть успешно выполнена несколько раз. В таком случае в таблицу включать все успешные проверки.
+
 CREATE OR REPLACE FUNCTION fnc_get_checked_tasks()
     RETURNS TABLE
             (
@@ -44,10 +46,10 @@ $$
 SELECT *
 FROM fnc_get_checked_tasks();
 
-
 -- 3) Написать функцию, определяющую пиров, которые не выходили из кампуса в течение всего дня
 -- Параметры функции: день, например 12.05.2022.
 -- Функция возвращает только список пиров.
+
 CREATE OR REPLACE FUNCTION fnc_get_peers_day_online(day date) RETURNS setof varchar
 AS
 $$
@@ -68,18 +70,18 @@ FROM (SELECT nickname, COUNT(*) AS count
 $$ language sql;
 
 SELECT *
-FROM fnc_get_peers_day_online('2023-09-14');
+FROM fnc_get_peers_day_online('2023-03-27');
 
 SELECT *
-FROM fnc_get_peers_day_online('2023-09-11');
+FROM fnc_get_peers_day_online('2023-09-04');
 
 SELECT *
-FROM fnc_get_peers_day_online('2023-09-25');
-
+FROM fnc_get_peers_day_online('2023-08-11');
 
 -- 4) Посчитать изменение в количестве пир поинтов каждого пира по таблице TransferredPoints
 -- Результат вывести отсортированным по изменению числа поинтов.
 -- Формат вывода: ник пира, изменение в количество пир поинтов
+
 CREATE OR REPLACE PROCEDURE prc_peer_points_change(IN rc REFCURSOR = 'rc') AS
 $$
 BEGIN
