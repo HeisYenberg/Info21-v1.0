@@ -47,7 +47,7 @@ AS
 $$
 DECLARE
     check_id  BIGINT;
-    verter_id BIGINT := (SELECT COALESCE(MAX(ID), 0) + 1
+    verter_id BIGINT := (SELECT MAX(ID) + 1
                          FROM Verter);
 BEGIN
     SELECT C.ID
@@ -69,12 +69,24 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION AfterInsertP2P()
     RETURNS TRIGGER AS
 $$
+DECLARE
+    checked_peer VARCHAR := (SELECT Peer
+                             FROM Checks
+                             WHERE ID = New."Check");
 BEGIN
     IF NEW.State = 'Start' THEN
-        UPDATE TransferredPoints
-        SET PointsAmount = PointsAmount + 1
-        WHERE CheckingPeer = NEW.CheckingPeer
-           OR CheckedPeer = NEW.CheckingPeer;
+        IF (SELECT COUNT(*)
+            FROM TransferredPoints
+            WHERE CheckingPeer = NEW.CheckingPeer
+               OR CheckedPeer = checked_peer) > 0 THEN
+            UPDATE TransferredPoints
+            SET PointsAmount = PointsAmount + 1
+            WHERE CheckingPeer = NEW.CheckingPeer
+               OR CheckedPeer = checked_peer;
+        ELSE
+            INSERT INTO TransferredPoints
+            VALUES ((SELECT COUNT(*) + 1 FROM TransferredPoints), NEW.CheckingPeer, checked_peer, 1);
+        END IF;
     END IF;
     RETURN NEW;
 END;

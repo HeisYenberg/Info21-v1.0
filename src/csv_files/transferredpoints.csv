@@ -1,8 +1,8 @@
-ID,CheckingPeer,CheckedPeer,PointsAmount
-1,scabberr,butterba,1
-2,strangem,butterba,1
-3,takishas,butterba,1
-4,mitcheld,butterba,1
-5,jacquelp,butterba,1
-6,omanytea,butterba,1
-7,naboojot,butterba,1
+id,checkingpeer,checkedpeer,pointsamount
+3,omanytea,takishas,5
+6,maslynem,naboojot,4
+4,scabberr,jacquelp,6
+5,junielan,omanytea,5
+2,jacquelp,strangem,7
+7,naboojot,mitcheld,4
+1,mitcheld,butterba,8

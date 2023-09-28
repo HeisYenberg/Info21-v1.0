@@ -221,10 +221,8 @@ CALL import_from_csv('Friends', '/Users/butterba/Developer/Projects/Info21_v1.0/
 CALL import_from_csv('Recommendations',
                      '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/recommendations.csv');
 
-CALL import_from_csv('TransferredPoints',
-                     '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/transferredpoints.csv');
-
 CALL import_from_csv('TimeTracking',
                      '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/timetracking.csv');
 
-CALL export_to_csv('P2P', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/p2p.csv');
+CALL export_to_csv('TransferredPoints',
+                   '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/transferredpoints.csv');
