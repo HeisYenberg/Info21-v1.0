@@ -124,8 +124,11 @@ CREATE TRIGGER XpBeforeInsert
     FOR EACH ROW
 EXECUTE FUNCTION BeforeInsertXP();
 
-CALL AddP2PCheck('strangem', 'butterba', 'C7_SmartCalc_v1.0', 'Start', '12:00:00');
-CALL AddP2PCheck('strangem', 'butterba', 'C7_SmartCalc_v1.0', 'Success', '12:10:00');
+CALL AddP2PCheck('strangem', 'butterba', 'D01_Linux', 'Start', '12:00:00');
+CALL AddP2PCheck('strangem', 'butterba', 'D01_Linux', 'Success', '12:10:00');
 
-CALL AddVerterCheck('strangem', 'C7_SmartCalc_v1.0', 'Start', '12:01:00');
-CALL AddVerterCheck('strangem', 'C7_SmartCalc_v1.0', 'Success', '12:01:59');
+CALL AddVerterCheck('strangem', 'D01_Linux', 'Start', '12:01:00');
+CALL AddVerterCheck('strangem', 'D01_Linux', 'Success', '12:01:59');
+
+INSERT INTO XP
+VALUES (31, 31, 300);

@@ -18,6 +18,9 @@ GROUP BY Peer1, Peer2
 ORDER BY Peer1, Peer2;
 $$ language sql;
 
+SELECT *
+FROM fnc_get_transferred_points();
+
 -- 2) Написать функцию, которая возвращает таблицу вида: ник пользователя, название проверенного задания, кол-во полученного XP
 -- В таблицу включать только задания, успешно прошедшие проверку (определять по таблице Checks).
 -- Одна задача может быть успешно выполнена несколько раз. В таком случае в таблицу включать все успешные проверки.
@@ -162,7 +165,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 BEGIN;
-CALL prc_get_peers_done_block('CPP');
+CALL prc_get_peers_done_block('C');
 FETCH ALL rc;
 END;
 
@@ -233,7 +236,7 @@ END
 $$ LANGUAGE plpgsql;
 
 BEGIN;
-CALL prc_blocks_percentage('C', 'CPP');
+CALL prc_blocks_percentage('C', 'DO');
 FETCH ALL rc;
 END;
 
@@ -461,7 +464,7 @@ BEGIN
         SELECT TO_CHAR(Peers.Birthday, 'Month')                                 AS Month,
                (SUM(CASE WHEN "Time" < '12:00:00' THEN 1 END) * 100 / COUNT(*)) AS EarlyEntries
         FROM Peers
-                 RIGHT JOIN timetracking ON EXTRACT(MONTH FROM Peers.Birthday) = EXTRACT(MONTH FROM timetracking."Date")
+                 LEFT JOIN timetracking ON EXTRACT(MONTH FROM Peers.Birthday) = EXTRACT(MONTH FROM timetracking."Date")
         GROUP BY Month;
 END;
 $$ LANGUAGE plpgsql;
