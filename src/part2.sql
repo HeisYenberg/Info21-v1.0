@@ -1,5 +1,6 @@
 -- Задание 1: Процедура добавления P2P проверки
-CREATE OR REPLACE PROCEDURE AddP2PCheck(
+
+CREATE OR REPLACE PROCEDURE prc_add_p2p_check(
     p_checking_peer VARCHAR,
     p_checked_peer VARCHAR,
     p_task_title VARCHAR,
@@ -37,7 +38,8 @@ END
 $$ LANGUAGE plpgsql;
 
 -- Задание 2: Процедура добавления проверки Verter'ом
-CREATE OR REPLACE PROCEDURE AddVerterCheck(
+
+CREATE OR REPLACE PROCEDURE prc_add_verter_check(
     p_checking_peer VARCHAR,
     p_task_title VARCHAR,
     p_status status,
@@ -66,7 +68,8 @@ END
 $$ LANGUAGE plpgsql;
 
 -- Задание 3: Триггер после добавления записи со статутом "начало" в таблицу P2P
-CREATE OR REPLACE FUNCTION AfterInsertP2P()
+
+CREATE OR REPLACE FUNCTION fnc_after_insert_p2p()
     RETURNS TRIGGER AS
 $$
 DECLARE
@@ -92,14 +95,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER P2PAfterInsert
+CREATE TRIGGER trg_p2p_after_insert
     AFTER INSERT
     ON P2P
     FOR EACH ROW
-EXECUTE FUNCTION AfterInsertP2P();
+EXECUTE FUNCTION fnc_after_insert_p2p();
 
 -- Задание 4: Триггер перед добавлением записи в таблицу XP
-CREATE OR REPLACE FUNCTION BeforeInsertXP()
+
+CREATE OR REPLACE FUNCTION fnc_before_insert_xp()
     RETURNS TRIGGER AS
 $$
 BEGIN
@@ -118,17 +122,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER XpBeforeInsert
+CREATE TRIGGER trg_xp_before_insert
     BEFORE INSERT
     ON XP
     FOR EACH ROW
-EXECUTE FUNCTION BeforeInsertXP();
+EXECUTE FUNCTION fnc_before_insert_xp();
 
-CALL AddP2PCheck('strangem', 'butterba', 'D01_Linux', 'Start', '12:00:00');
-CALL AddP2PCheck('strangem', 'butterba', 'D01_Linux', 'Success', '12:10:00');
+CALL prc_add_p2p_check('strangem', 'butterba', 'D01_Linux', 'Start', '12:00:00');
+CALL prc_add_p2p_check('strangem', 'butterba', 'D01_Linux', 'Success', '12:10:00');
 
-CALL AddVerterCheck('strangem', 'D01_Linux', 'Start', '12:01:00');
-CALL AddVerterCheck('strangem', 'D01_Linux', 'Success', '12:01:59');
+CALL prc_add_verter_check('strangem', 'D01_Linux', 'Start', '12:01:00');
+CALL prc_add_verter_check('strangem', 'D01_Linux', 'Success', '12:01:59');
 
 INSERT INTO XP
 VALUES (31, 31, 300);

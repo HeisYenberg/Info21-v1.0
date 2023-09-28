@@ -368,7 +368,7 @@ BEGIN
                                     WHERE P2P.State = 'Success'
                                       AND Verter.State = 'Success'
                                     GROUP BY Checks."Date")
-        SELECT "Date"
+        SELECT DISTINCT "Date"
         FROM successfull_checks
         WHERE count_checks >= N;
 END;
@@ -414,7 +414,7 @@ BEGIN
                                 WHERE "Time" < before_time
                                   AND state = 1
                                 GROUP BY Peer, "Date")
-        SELECT Peer
+        SELECT DISTINCT Peer
         FROM visited_before
         WHERE visits >= N;
 END;
@@ -442,7 +442,7 @@ BEGIN
                             FROM last_days
                             WHERE state = 2
                             GROUP BY peer, "Date")
-        SELECT peer
+        SELECT DISTINCT peer
         FROM going_outs
         WHERE count_outs > M;
 END;

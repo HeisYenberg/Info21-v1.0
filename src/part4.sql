@@ -1,27 +1,32 @@
-create database part4;
+CREATE DATABASE part4;
 
-create table if not exists peer_projects
+CREATE TABLE IF NOT EXISTS peer_projects
 (
 );
-create table if not exists school_info
+
+CREATE TABLE IF NOT EXISTS school_info
 (
 );
-create table if not exists TableNameNew
+
+CREATE TABLE IF NOT EXISTS TableNameNew
 (
 );
-create table if not exists TableName23
+
+CREATE TABLE IF NOT EXISTS TableName23
 (
 );
-create table if not exists TableNameSuper
+
+CREATE TABLE IF NOT EXISTS TableNameSuper
 (
 );
 
 -- 1) Создать хранимую процедуру, которая, не уничтожая базу данных,
 -- уничтожает все те таблицы текущей базы данных, имена которых начинаются с фразы 'TableName'.
-CREATE OR REPLACE PROCEDURE fnc_drop_tables_by_name() AS
+
+CREATE OR REPLACE PROCEDURE prc_drop_tables_by_name() AS
 $$
 DECLARE
-    row record;
+    row RECORD;
 BEGIN
     FOR row IN (SELECT table_name
                 FROM information_schema.tables
@@ -32,29 +37,32 @@ BEGIN
 END;
 $$ language plpgsql;
 
-CALL fnc_drop_tables_by_name();
-
+CALL prc_drop_tables_by_name();
 
 -- 2) Создать хранимую процедуру с выходным параметром, которая выводит список имен
 -- и параметров всех скалярных SQL функций пользователя в текущей базе данных.
 -- Имена функций без параметров не выводить. Имена и список параметров должны выводиться
 -- в одну строку. Выходной параметр возвращает количество найденных функций.
-CREATE OR REPLACE FUNCTION fnc_some_fnc_1(p232 varchar, p111 bigint) RETURNS void AS
-$$$$language sql;
-CREATE OR REPLACE FUNCTION fnc_some_fnc_2(dogf varchar, pool bigint, sad char) RETURNS void AS
-$$$$language sql;
-CREATE OR REPLACE FUNCTION fnc_some_fnc_3(param2323 varchar) RETURNS void AS
-$$$$language sql;
-CREATE OR REPLACE FUNCTION fnc_some_fnc_4() RETURNS void AS
+
+CREATE OR REPLACE FUNCTION fnc_some_fnc_1(p232 VARCHAR, p111 BIGINT) RETURNS VOID AS
 $$$$language sql;
 
-CREATE OR REPLACE PROCEDURE fnc_get_funcs_with_params(OUT func_count integer) AS
+CREATE OR REPLACE FUNCTION fnc_some_fnc_2(dogf VARCHAR, pool BIGINT, sad CHAR) RETURNS VOID AS
+$$$$language sql;
+
+CREATE OR REPLACE FUNCTION fnc_some_fnc_3(param2323 VARCHAR) RETURNS VOID AS
+$$$$language sql;
+
+CREATE OR REPLACE FUNCTION fnc_some_fnc_4() RETURNS VOID AS
+$$$$language sql;
+
+CREATE OR REPLACE PROCEDURE prc_get_funcs_with_params(OUT func_count INTEGER) AS
 $$
 DECLARE
-    func record;
+    func RECORD;
 BEGIN
     func_count := 0;
-    FOR func in (SELECT routine_name, string_agg(parameter_name, ', ') as params
+    FOR func IN (SELECT routine_name, string_agg(parameter_name, ', ') AS params
                  FROM information_schema.routines rt
                           LEFT JOIN information_schema.parameters pm ON rt.specific_name = pm.specific_name
                  WHERE routine_type = 'FUNCTION'
@@ -68,22 +76,22 @@ BEGIN
             func_count := func_count + 1;
         END LOOP;
 END;
-$$ language plpgsql;
+$$ LANGUAGE plpgsql;
 
 DO
 $$
     DECLARE
-        func_count integer;
+        func_count INTEGER;
     BEGIN
-        CALL fnc_get_funcs_with_params(func_count);
+        CALL prc_get_funcs_with_params(func_count);
         RAISE NOTICE 'Func found: %', func_count;
     END;
 $$;
 
-
 -- 3) Создать хранимую процедуру с выходным параметром, которая уничтожает все SQL DML триггеры
 -- в текущей базе данных. Выходной параметр возвращает количество уничтоженных триггеров.
-CREATE OR REPLACE FUNCTION fnc_trigger_function() RETURNS TRIGGER AS
+
+CREATE OR REPLACE FUNCTION prc_trigger_function() RETURNS TRIGGER AS
 $$
 BEGIN
     IF (TG_OP = 'INSERT') THEN
@@ -96,23 +104,23 @@ CREATE OR REPLACE TRIGGER trg_some_trigger
     AFTER INSERT OR UPDATE
     ON school_info
     FOR EACH ROW
-EXECUTE PROCEDURE fnc_trigger_function();
+EXECUTE PROCEDURE prc_trigger_function();
 
 CREATE OR REPLACE TRIGGER trg_another_trigger
     AFTER DELETE OR UPDATE
-    ON super_table
+    ON peer_projects
     FOR EACH ROW
-EXECUTE PROCEDURE fnc_trigger_function();
+EXECUTE PROCEDURE prc_trigger_function();
 
 
-CREATE OR REPLACE PROCEDURE fnc_drop_all_triggers(OUT dropped_triggers integer) AS
+CREATE OR REPLACE PROCEDURE prc_drop_all_triggers(OUT dropped_triggers INTEGER) AS
 $$
 DECLARE
-    trigger record;
+    trigger RECORD;
 BEGIN
     dropped_triggers := 0;
 
-    FOR trigger in (SELECT DISTINCT trigger_name, event_object_table
+    FOR trigger IN (SELECT DISTINCT trigger_name, event_object_table
                     FROM information_schema.triggers
                     WHERE trigger_schema = 'public')
         LOOP
@@ -121,26 +129,26 @@ BEGIN
             dropped_triggers = dropped_triggers + 1;
         END LOOP;
 END;
-$$ language plpgsql;
+$$ LANGUAGE plpgsql;
 
 DO
 $$
     DECLARE
-        triggers_dropped integer;
+        triggers_dropped INTEGER;
     BEGIN
-        CALL fnc_drop_all_triggers(triggers_dropped);
+        CALL prc_drop_all_triggers(triggers_dropped);
         RAISE NOTICE 'Triggers dropped: %', triggers_dropped;
     END;
 $$;
 
-
 -- 4) Создать хранимую процедуру с входным параметром, которая выводит имена и описания
 -- типа объектов (только хранимых процедур и скалярных функций),
 -- в тексте которых на языке SQL встречается строка, задаваемая параметром процедуры.
-CREATE OR REPLACE PROCEDURE fnc_print_objects_with_substr(IN substr varchar) AS
+
+CREATE OR REPLACE PROCEDURE prc_print_objects_with_substr(IN substr varchar) AS
 $$
 DECLARE
-    row record;
+    row RECORD;
 BEGIN
     FOR row IN (SELECT routine_name, routine_type
                 FROM information_schema.routines
@@ -151,6 +159,6 @@ BEGIN
             RAISE NOTICE 'Name: %, Type desc: %', row.routine_name, row.routine_type;
         END LOOP;
 END;
-$$ language plpgsql;
+$$ LANGUAGE plpgsql;
 
-CALL fnc_print_objects_with_substr('like');
+CALL prc_print_objects_with_substr('like');
