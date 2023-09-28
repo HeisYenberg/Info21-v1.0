@@ -6,3 +6,9 @@ C5_s21_decimal,C3_s21_stringplus,350
 C6_s21_matrix,C5_s21_decimal,200
 C7_SmartCalc_v1.0,C6_s21_matrix,650
 C8_3DViewer_v1.0,C7_SmartCalc_v1.0,1043
+D01_Linux,C3_s21_stringplus,300
+DO2_LinuxNetwork,D01_Linux,350
+DO3_LinuxMonitoring_v1.0,DO2_LinuxNetwork,350
+DO4_LinuxMonitoring_v2.0,DO3_LinuxMonitoring_v1.0,501
+DO5_SimpleDocker,DO3_LinuxMonitoring_v1.0,300
+DO6_CICD,DO5_SimpleDocker,402

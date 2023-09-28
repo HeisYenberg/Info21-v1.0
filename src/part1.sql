@@ -164,7 +164,7 @@ BEGIN
     WITH last_peer_state AS (SELECT "Date", "Time", State
                              FROM TimeTracking
                              WHERE Peer = NEW.Peer
-                             ORDER BY "Date", "Time"
+                             ORDER BY "Date" DESC, "Time" DESC
                              LIMIT 1)
     SELECT "Date",
            "Time",
@@ -204,27 +204,27 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CALL import_from_csv('Peers', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/peers.csv');
+CALL import_from_csv('Peers', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/peers.csv');
 
-CALL import_from_csv('Tasks', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/tasks.csv');
+CALL import_from_csv('Tasks', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/tasks.csv');
 
-CALL import_from_csv('Checks', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/checks.csv');
+CALL import_from_csv('Checks', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/checks.csv');
 
-CALL import_from_csv('P2P', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/p2p.csv');
+CALL import_from_csv('P2P', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/p2p.csv');
 
-CALL import_from_csv('Verter', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/verter.csv');
+CALL import_from_csv('Verter', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/verter.csv');
 
-CALL import_from_csv('XP', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/xp.csv');
+CALL import_from_csv('XP', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/xp.csv');
 
-CALL import_from_csv('Friends', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/friends.csv');
+CALL import_from_csv('Friends', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/friends.csv');
 
 CALL import_from_csv('Recommendations',
-                     '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/recommendations.csv');
+                     '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/recommendations.csv');
 
 CALL import_from_csv('TransferredPoints',
-                     '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/transferredpoints.csv');
+                     '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/transferredpoints.csv');
 
 CALL import_from_csv('TimeTracking',
-                     '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/timetracking.csv');
+                     '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/timetracking.csv');
 
-CALL export_to_csv('P2P', '/mnt/c/Users/HeisYenberg/Developer/Projects/Info21_v1.0/src/csv_files/p2p.csv');
+CALL export_to_csv('P2P', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/p2p.csv');
