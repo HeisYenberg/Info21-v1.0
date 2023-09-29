@@ -136,8 +136,6 @@ END;
 
 CREATE OR REPLACE PROCEDURE prc_most_freq_checked_task(IN rc REFCURSOR = 'rc') AS
 $$
-DECLARE
-    rc REFCURSOR;
 BEGIN
     OPEN rc FOR
         WITH TaskCounts AS (SELECT "Date",
