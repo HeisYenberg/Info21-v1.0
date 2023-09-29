@@ -5,19 +5,25 @@
 CREATE OR REPLACE FUNCTION fnc_get_transferred_points()
     RETURNS TABLE
             (
-                Peer1        varchar,
-                Peer2        varchar,
-                PointsAmount integer
+                Peer1        VARCHAR,
+                Peer2        VARCHAR,
+                PointsAmount INTEGER
             )
 AS
 $$
-SELECT CASE WHEN checkingpeer < checkedpeer THEN checkingpeer ELSE checkedpeer END        as Peer1,
-       CASE WHEN checkingpeer > checkedpeer THEN checkingpeer ELSE checkedpeer END        as Peer2,
-       SUM(CASE WHEN checkingpeer < checkedpeer THEN pointsamount ELSE -pointsamount END) as PointsAmount
-FROM transferredpoints
+SELECT checkingpeer AS Peer1,
+       checkedpeer  AS Peer2,
+       SUM(CASE
+               WHEN (SELECT pointsamount
+                     FROM transferredpoints
+                     WHERE checkingpeer = tp.checkedpeer
+                       AND checkedpeer = tp.checkingpeer) > pointsamount THEN -pointsamount
+               ELSE pointsamount
+           END)     AS PointsAmount
+FROM transferredpoints AS tp
 GROUP BY Peer1, Peer2
 ORDER BY Peer1, Peer2;
-$$ language sql;
+$$ LANGUAGE sql;
 
 SELECT *
 FROM fnc_get_transferred_points();
@@ -29,9 +35,9 @@ FROM fnc_get_transferred_points();
 CREATE OR REPLACE FUNCTION fnc_get_checked_tasks()
     RETURNS TABLE
             (
-                peer varchar,
-                task varchar,
-                xp   integer
+                peer VARCHAR,
+                task VARCHAR,
+                xp   INTEGER
             )
 AS
 $$
@@ -41,7 +47,7 @@ FROM checks c
          JOIN p2p ON p2p."Check" = c.id
 WHERE p2p.state = 'Success';
 $$
-    language sql;
+    LANGUAGE sql;
 
 SELECT *
 FROM fnc_get_checked_tasks();
@@ -50,7 +56,7 @@ FROM fnc_get_checked_tasks();
 -- Параметры функции: день, например 12.05.2022.
 -- Функция возвращает только список пиров.
 
-CREATE OR REPLACE FUNCTION fnc_get_peers_day_online(day date) RETURNS setof varchar
+CREATE OR REPLACE FUNCTION fnc_get_peers_day_online(day date) RETURNS setof VARCHAR
 AS
 $$
 SELECT vin.nickname
@@ -67,7 +73,7 @@ FROM (SELECT nickname, COUNT(*) AS count
                  AND tt."Date" = day
                GROUP BY nickname) AS vout
               ON vin.nickname = vout.nickname AND vin.count = vout.count AND vin.count = 1;
-$$ language sql;
+$$ LANGUAGE sql;
 
 SELECT *
 FROM fnc_get_peers_day_online('2023-03-27');
@@ -87,11 +93,11 @@ $$
 BEGIN
     OPEN rc FOR
         SELECT Peer1 AS Peer, SUM(pointsamount) AS PointsChange
-        FROM (SELECT checkingpeer as Peer1, checkedpeer as Peer2, pointsamount
+        FROM (SELECT checkingpeer AS Peer1, checkedpeer AS Peer2, pointsamount
               FROM transferredpoints
               UNION ALL
-              SELECT checkedpeer as Peer1, checkingpeer as Peer2, -pointsamount
-              FROM transferredpoints) as checks_div
+              SELECT checkedpeer AS Peer1, checkingpeer AS Peer2, -pointsamount
+              FROM transferredpoints) AS checks_div
         GROUP BY Peer1;
 END;
 $$ LANGUAGE plpgsql;
@@ -113,8 +119,8 @@ BEGIN
         FROM (SELECT Peer1, Peer2, pointsamount
               FROM fnc_get_transferred_points()
               UNION ALL
-              SELECT Peer2 as Peer1, Peer1 as Peer2, -pointsamount
-              FROM fnc_get_transferred_points()) as checks_div
+              SELECT Peer2 AS Peer1, Peer1 AS Peer2, -pointsamount
+              FROM fnc_get_transferred_points()) AS checks_div
         GROUP BY Peer1;
 END;
 $$ LANGUAGE plpgsql;
@@ -130,6 +136,8 @@ END;
 
 CREATE OR REPLACE PROCEDURE prc_most_freq_checked_task(IN rc REFCURSOR = 'rc') AS
 $$
+DECLARE
+    rc REFCURSOR;
 BEGIN
     OPEN rc FOR
         WITH TaskCounts AS (SELECT "Date",
