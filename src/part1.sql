@@ -1,3 +1,5 @@
+CREATE DATABASE info21;
+
 CREATE TABLE Peers
 (
     Nickname VARCHAR PRIMARY KEY NOT NULL,
@@ -55,14 +57,24 @@ CREATE OR REPLACE FUNCTION fnc_p2p_check_state()
     RETURNS TRIGGER AS
 $$
 BEGIN
-    IF NEW.State = 'Start' AND (SELECT COUNT(*) FROM P2P WHERE "Check" = NEW."Check" AND State = 'Start') > 1 THEN
+    IF NEW.State = 'Start' AND (SELECT COUNT(*)
+                                FROM P2P
+                                WHERE "Check" = NEW."Check"
+                                  AND State = 'Start') > 1 THEN
         RAISE EXCEPTION 'Checking already started!';
     ELSIF NEW.State IN ('Success', 'Failure') THEN
-        IF (SELECT COUNT(*) FROM P2P WHERE "Check" = NEW."Check" AND State = 'Start') = 0 OR
-           (SELECT COUNT(*) FROM P2P WHERE "Check" = NEW."Check" AND State IN ('Success', 'Failure')) > 1 THEN
+        IF (SELECT COUNT(*)
+            FROM P2P
+            WHERE "Check" = NEW."Check" AND State = 'Start') = 0 OR
+           (SELECT COUNT(*)
+            FROM P2P
+            WHERE "Check" = NEW."Check"
+              AND State IN ('Success', 'Failure')) > 1 THEN
             RAISE EXCEPTION 'Checking was not started or already finished!';
         END IF;
-        IF NEW."Time" < (SELECT "Time" FROM P2P WHERE "Check" = NEW."Check" AND State = 'Start') THEN
+        IF NEW."Time" < (SELECT "Time"
+                         FROM P2P
+                         WHERE "Check" = NEW."Check" AND State = 'Start') THEN
             RAISE EXCEPTION 'End cannot be earlier than the start!';
         END IF;
     END IF;
@@ -88,16 +100,28 @@ CREATE OR REPLACE FUNCTION fnc_verter_check_state()
     RETURNS TRIGGER AS
 $$
 BEGIN
-    IF (SELECT COUNT(*) FROM P2P WHERE "Check" = NEW."Check" AND State = 'Success') = 0 THEN
+    IF (SELECT COUNT(*)
+        FROM P2P
+        WHERE "Check" = NEW."Check" AND State = 'Success') = 0 THEN
         RAISE EXCEPTION 'Successful peer checking has not been completed!';
-    ELSIF NEW.State = 'Start' AND (SELECT COUNT(*) FROM Verter WHERE "Check" = NEW."Check" AND State = 'Start') > 1 THEN
+    ELSIF NEW.State = 'Start' AND (SELECT COUNT(*)
+                                   FROM Verter
+                                   WHERE "Check" = NEW."Check"
+                                     AND State = 'Start') > 1 THEN
         RAISE EXCEPTION 'Checking already started!';
     ELSIF NEW.State IN ('Success', 'Failure') THEN
-        IF (SELECT COUNT(*) FROM Verter WHERE "Check" = NEW."Check" AND State = 'Start') = 0 OR
-           (SELECT COUNT(*) FROM Verter WHERE "Check" = NEW."Check" AND State IN ('Success', 'Failure')) > 1 THEN
+        IF (SELECT COUNT(*)
+            FROM Verter
+            WHERE "Check" = NEW."Check" AND State = 'Start') = 0 OR
+           (SELECT COUNT(*)
+            FROM Verter
+            WHERE "Check" = NEW."Check"
+              AND State IN ('Success', 'Failure')) > 1 THEN
             RAISE EXCEPTION 'Checking was not started or already finished!';
         END IF;
-        IF NEW."Time" < (SELECT "Time" FROM Verter WHERE "Check" = NEW."Check" AND State = 'Start') THEN
+        IF NEW."Time" < (SELECT "Time"
+                         FROM Verter
+                         WHERE "Check" = NEW."Check" AND State = 'Start') THEN
             RAISE EXCEPTION 'End cannot be earlier than the start!';
         END IF;
     END IF;
@@ -175,7 +199,8 @@ BEGIN
         RAISE EXCEPTION 'First state cannot be exit!';
     ELSIF prev_state = NEW.State THEN
         RAISE EXCEPTION 'Peer cannot be in the same state twice in a row!';
-    ELSIF (NEW."Date" < prev_date) OR (NEW."Date" = prev_date AND NEW."Time" < prev_time) THEN
+    ELSIF (NEW."Date" < prev_date) OR
+          (NEW."Date" = prev_date AND NEW."Time" < prev_time) THEN
         RAISE EXCEPTION 'New state cannot be earlier than the previous!';
     END IF;
     RETURN NEW;
@@ -192,7 +217,8 @@ CREATE OR REPLACE PROCEDURE import_from_csv(ptable_name VARCHAR, ppath_to_file V
 AS
 $$
 BEGIN
-    EXECUTE CONCAT('COPY ', ptable_name, ' FROM ''', ppath_to_file, ''' WITH CSV HEADER;');
+    EXECUTE CONCAT('COPY ', ptable_name, ' FROM ''', ppath_to_file,
+                   ''' WITH CSV HEADER;');
 END
 $$ LANGUAGE plpgsql;
 
@@ -200,29 +226,28 @@ CREATE OR REPLACE PROCEDURE export_to_csv(ptable_name VARCHAR, ppath_to_file VAR
 AS
 $$
 BEGIN
-    EXECUTE CONCAT('COPY ', ptable_name, ' TO ''', ppath_to_file, ''' WITH CSV HEADER;');
+    EXECUTE CONCAT('COPY ', ptable_name, ' TO ''', ppath_to_file,
+                   ''' WITH CSV HEADER;');
 END
 $$ LANGUAGE plpgsql;
 
-CALL import_from_csv('Peers', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/peers.csv');
-
-CALL import_from_csv('Tasks', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/tasks.csv');
-
-CALL import_from_csv('Checks', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/checks.csv');
-
-CALL import_from_csv('P2P', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/p2p.csv');
-
-CALL import_from_csv('Verter', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/verter.csv');
-
-CALL import_from_csv('XP', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/xp.csv');
-
-CALL import_from_csv('Friends', '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/friends.csv');
-
-CALL import_from_csv('Recommendations',
-                     '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/recommendations.csv');
-
-CALL import_from_csv('TimeTracking',
-                     '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/timetracking.csv');
-
-CALL import_from_csv('TransferredPoints',
-                     '/Users/butterba/Developer/Projects/Info21_v1.0/src/csv_files/transferredpoints.csv');
+DO
+$$
+    DECLARE
+        datasets_folder TEXT := '/mnt/c/Users/HeisYenberg/Developer/Projects/SQL/Info21_v1.0/datasets';
+    BEGIN
+        CALL import_from_csv('Peers', CONCAT(datasets_folder, 'peers.csv'));
+        CALL import_from_csv('Tasks', CONCAT(datasets_folder, 'tasks.csv'));
+        CALL import_from_csv('Checks', CONCAT(datasets_folder, 'checks.csv'));
+        CALL import_from_csv('P2P', CONCAT(datasets_folder, 'p2p.csv'));
+        CALL import_from_csv('Verter', CONCAT(datasets_folder, 'verter.csv'));
+        CALL import_from_csv('XP', CONCAT(datasets_folder, 'xp.csv'));
+        CALL import_from_csv('Friends', CONCAT(datasets_folder, 'friends.csv'));
+        CALL import_from_csv('Recommendations',
+                             CONCAT(datasets_folder, 'recommendations.csv'));
+        CALL import_from_csv('TimeTracking',
+                             CONCAT(datasets_folder, 'timetracking.csv'));
+        CALL import_from_csv('TransferredPoints',
+                             CONCAT(datasets_folder, 'transferredpoints.csv'));
+    END
+$$;
